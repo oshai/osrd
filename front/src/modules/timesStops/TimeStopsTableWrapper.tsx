@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useScenarioContext } from 'applications/operationalStudies/hooks/useScenarioContext';
 import type { PathPropertiesFormatted } from 'applications/operationalStudies/types';
 import type {
-  CorePathfindingResultSuccess,
+  CorePathfindingResult,
   LightRollingStock,
   ReceptionSignal,
   SimulationResponseSuccess,
@@ -38,7 +38,7 @@ type TimeStopsTableWrapperProps = {
   selectedTrain: Train;
   trainSchedulesWithDetails: TrainScheduleWithDetails[];
   simulatedTrain?: SimulationResponseSuccess['final_output'];
-  simulatedBaseTrain?: SimulationResponseSuccess['base'];
+  simulatedBaseTrain?: SimulationResponse['base'];
   simulatedPath?: CorePathfindingResultSuccess;
   simulatedPathItemTimes?: Extract<SimulationSummary, { isValid: true }>['pathItemTimes'];
   simulatedPathItemRespect?: Extract<SimulationSummary, { isValid: true }>['pathItemRespect'];
