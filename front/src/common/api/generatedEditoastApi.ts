@@ -1355,6 +1355,17 @@ const injectedRtkApi = api
         }),
         providesTags: ['timetable'],
       }),
+      postTimetableByIdTrainSchedules: build.mutation<
+        PostTimetableByIdTrainSchedulesApiResponse,
+        PostTimetableByIdTrainSchedulesApiArg
+      >({
+        query: (queryArg) => ({
+          url: `/timetable/${queryArg.id}/train_schedules`,
+          method: 'POST',
+          body: queryArg.body,
+        }),
+        invalidatesTags: ['timetable', 'train_schedule'],
+      }),
       getTimetableByIdTrainSchedulesAndTrainScheduleId: build.query<
         GetTimetableByIdTrainSchedulesAndTrainScheduleIdApiResponse,
         GetTimetableByIdTrainSchedulesAndTrainScheduleIdApiArg
@@ -2871,6 +2882,13 @@ export type GetTimetableByIdTrainSchedulesApiArg = {
   id: number;
   page?: number;
   pageSize?: number;
+};
+export type PostTimetableByIdTrainSchedulesApiResponse =
+  /** status 201 The created train schedules */ TrainScheduleResponseV2[];
+export type PostTimetableByIdTrainSchedulesApiArg = {
+  /** A timetable ID */
+  id: number;
+  body: TrainSchedule[];
 };
 export type GetTimetableByIdTrainSchedulesAndTrainScheduleIdApiResponse =
   /** status 200 Train schedule */ TrainScheduleResponse;
@@ -5529,6 +5547,10 @@ export type TrainSchedule = {
 export type TrainScheduleResponse = TrainSchedule & {
   id: number;
   train_schedule_set_id: number;
+};
+export type TrainScheduleResponseV2 = TrainSchedule & {
+  id: number;
+  timetable_id: number;
 };
 export type TowedRollingStock = {
   /** Acceleration in m·s⁻² */
