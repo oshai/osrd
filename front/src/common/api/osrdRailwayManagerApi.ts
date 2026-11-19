@@ -411,7 +411,7 @@ export type SimulationReport = {
   posterior_train_name?: string | null;
   substitute_train?: SubstituteTrain | null;
   course_type: CourseType;
-  statistical_category: string;
+  statistical_category: CsCode['code'];
   hazardous_materials?: boolean;
   demand_category?: string | null;
   track_section_ranges: {
