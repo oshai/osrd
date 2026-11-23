@@ -14,7 +14,9 @@ const frTranslations = readJsonFile<{ rollingStock: RollingStockTranslations }>(
 
 class RollingstockEditorPage extends RollingStockSelector {
   private readonly rollingstockEditorList: Locator;
-  private readonly rollingstockCard: Locator;
+  private readonly rollingStockCards: Locator;
+  private readonly rollingStockCard: (rollingStockName: string) => Locator;
+  private readonly categoryCheckbox: (rollingStockCategory: string) => Locator;
   private readonly newRollingstockButton: Locator;
   private readonly submitRollingstockButton: Locator;
   private readonly rollingstockDetailsButton: Locator;
@@ -38,7 +40,11 @@ class RollingstockEditorPage extends RollingStockSelector {
   constructor(page: Page) {
     super(page);
     this.rollingstockEditorList = page.getByTestId('rollingstock-editor-list');
-    this.rollingstockCard = this.rollingstockEditorList.getByTestId(/^rollingstock-/);
+    this.rollingStockCards = this.rollingstockEditorList.getByTestId(/^rollingstock-/);
+    this.rollingStockCard = (rollingStockName) =>
+      page.getByTestId(`rollingstock-${rollingStockName}`);
+    this.categoryCheckbox = (rollingStockCategory) =>
+      page.getByTestId(`category-checkbox-${rollingStockCategory}-checkbox`);
     this.newRollingstockButton = page.getByTestId('new-rollingstock-button');
     this.submitRollingstockButton = page.getByTestId('submit-rollingstock-button');
     this.rollingstockDetailsButton = page.getByTestId('tab-rollingstock-details');
@@ -61,14 +67,7 @@ class RollingstockEditorPage extends RollingStockSelector {
     this.editRollingStockButton = page.getByTestId('rollingstock-edit-button');
     this.duplicateRollingStockButton = page.getByTestId('rollingstock-duplicate-button');
     this.deleteRollingStockButton = page.getByTestId('rollingstock-delete-button');
-  }
 
-  private getCategoryCheckboxLocator(rollingstockCategory: string): Locator {
-    return this.page.getByTestId(`category-checkbox-${rollingstockCategory}-checkbox`);
-  }
-
-  private getRollingStockCard(rollingStockName: string): Locator {
-    return this.page.getByTestId(`rollingstock-${rollingStockName}`);
   }
 
   async navigateToRollingStockPage() {
@@ -87,17 +86,17 @@ class RollingstockEditorPage extends RollingStockSelector {
   }
 
   async verifyFirstRollingStockCardVisibility() {
-    await expect(this.rollingstockCard.first()).toBeVisible();
+    await expect(this.rollingStockCards.first()).toBeVisible();
   }
 
   async searchRollingStock(rollingStockName: string, shouldExist = true) {
     await this.rollingStockSearchInput.fill(rollingStockName);
     await this.waitForLoaderToDisappear();
-    const rollingStockCard = this.getRollingStockCard(rollingStockName);
-    if (shouldExist) {
-      await expect(rollingStockCard).toBeVisible();
-    } else {
-      await expect(rollingStockCard).not.toBeVisible();
+    for (const name of listed) {
+      await expect(this.rollingStockCard(name)).toBeVisible();
+    }
+    for (const name of notListed) {
+      await expect(this.rollingStockCard(name)).toBeHidden();
     }
   }
 
@@ -107,7 +106,7 @@ class RollingstockEditorPage extends RollingStockSelector {
   }
 
   async selectRollingStock(rollingStockName: string) {
-    await this.getRollingStockCard(rollingStockName).click();
+    await this.rollingStockCard(rollingStockName).click();
   }
 
   async editRollingStock(rollingStockName: string) {
@@ -177,20 +176,20 @@ class RollingstockEditorPage extends RollingStockSelector {
   async selectPrimaryCategory(value: string) {
     await this.primaryCategorySelector.selectOption(value);
     await expect(this.primaryCategorySelector).toHaveValue(value);
-    const checkbox = this.getCategoryCheckboxLocator(value);
+    const checkbox = this.categoryCheckbox(value);
     await expect(checkbox).toBeChecked();
     await expect(checkbox).toBeDisabled();
   }
 
   async checkCategoryCheckbox(category: string) {
-    const checkbox = this.getCategoryCheckboxLocator(category);
+    const checkbox = this.categoryCheckbox(category);
     await expect(checkbox).not.toBeChecked();
     await checkbox.locator('..').locator('label').click();
     await expect(checkbox).toBeChecked();
   }
 
   async uncheckCategoryCheckbox(category: string) {
-    const checkbox = this.getCategoryCheckboxLocator(category);
+    const checkbox = this.categoryCheckbox(category);
     await expect(checkbox).toBeChecked();
     await checkbox.locator('..').locator('label').click();
     await expect(checkbox).not.toBeChecked();
