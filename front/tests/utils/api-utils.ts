@@ -22,19 +22,15 @@ import type {
   StdcmSearchEnvironmentCreateForm,
   GetStudiesApiResponse,
   GetScenariosApiResponse,
+  GetAuthzGroupsApiResponse,
   GetAuthzUsersApiResponse,
-  GrantBody,
-  PostAuthzUserInfoApiResponse,
   PostAuthzUsersApiArg,
   PostAuthzUsersApiResponse,
-  StandardGrant,
+  PutAuthzGroupsApiArg,
+  PutAuthzGroupsApiResponse,
 } from 'common/api/osrdEditoastApi';
 
-import {
-  E2E_USER_IDENTITIES,
-  E2E_USER_ROLES,
-  E2E_USERS,
-} from '../assets/constants/permission-const';
+import { E2E_GROUP, E2E_USERS, type E2EUser } from '../assets/constants/permission-const';
 import {
   BASE_URL,
   globalProjectName,
@@ -47,11 +43,13 @@ import { readJsonFile } from './file-utils';
 /**
  * Initialize a new API request context with the base URL.
  *
+ * @param impersonatedIdentity - Optional. Identity of the user the requests are sent on behalf of.
  * @returns {Promise<APIRequestContext>} - The API request context.
  */
-export const getApiContext = async (): Promise<APIRequestContext> =>
+export const getApiContext = async (impersonatedIdentity?: string): Promise<APIRequestContext> =>
   request.newContext({
     baseURL: BASE_URL,
+    extraHTTPHeaders: impersonatedIdentity ? { 'x-impersonate': impersonatedIdentity } : undefined,
   });
 
 /**
@@ -155,15 +153,22 @@ export const postApiRequest = async <T, U>(
  * Send a DELETE request to the specified API endpoint.
  *
  * @param url - The API endpoint URL.
+ * @param errorMessage - Optional. Custom error message for failed requests.
+ * @param options - Optional. Query parameters, and whether a 404 (already deleted) is accepted.
  * @returns {Promise<Response>} - The API response.
  */
 export const deleteApiRequest = async (
   url: string,
-  errorMessage?: string
+  errorMessage?: string,
+  {
+    params,
+    ignoreNotFound = false,
+  }: { params?: { [key: string]: string | number | boolean }; ignoreNotFound?: boolean } = {}
 ): Promise<APIResponse> => {
   const apiContext = await getApiContext();
   try {
-    const response = await apiContext.delete(url);
+    const response = await apiContext.delete(url, { params });
+    if (ignoreNotFound && response.status() === 404) return response;
     handleErrorResponse(response, errorMessage);
     return response;
   } finally {
@@ -196,7 +201,9 @@ export const getWorkerStatus = async (infraId: number): Promise<WorkerStatus> =>
     });
     return response as WorkerStatus;
   } catch (error) {
-    throw new Error(`Failed to retrieve worker with infra ID ${infraId}`, { cause: error });
+    throw new Error(`Failed to retrieve worker with infra ID ${infraId}`, {
+      cause: error,
+    });
   }
 };
 
@@ -346,93 +353,74 @@ export async function deleteStdcmEnvironment(stdcmSearchEnvId: number): Promise<
 }
 
 /**
- * Delete the e2e test users using the editoast API.
+ * Delete the e2e test users and the e2e group using the editoast API.
  * Users are matched by name as well as by identity.
  */
 export async function deleteE2eUsers(): Promise<void> {
-  const e2eNames = new Set<string>(Object.values(E2E_USERS));
-  const e2eIdentities = new Set<string>(Object.values(E2E_USER_IDENTITIES));
-  const users: GetAuthzUsersApiResponse = await getApiRequest(
-    '/api/authz/users',
-    undefined,
-    'Failed to list the users'
-  );
-  const e2eUsers = users.filter(
+  const e2eUsers: readonly E2EUser[] = Object.values(E2E_USERS);
+  const e2eNames = new Set(e2eUsers.map(({ name }) => name));
+  const e2eIdentities = new Set(e2eUsers.map(({ identity }) => identity));
+  const [users, groups] = await Promise.all([
+    getApiRequest<GetAuthzUsersApiResponse>(
+      '/api/authz/users',
+      undefined,
+      'Failed to list the users'
+    ),
+    getApiRequest<GetAuthzGroupsApiResponse>(
+      '/api/authz/groups',
+      undefined,
+      'Failed to list the groups'
+    ),
+  ]);
+  const usersToDelete = users.filter(
     ({ name, identities }) =>
       e2eNames.has(name) || identities.some((identity) => e2eIdentities.has(identity))
   );
-  await Promise.all(
-    e2eUsers.map(({ id, name }) =>
+  const groupsToDelete = groups.filter(({ name }) => name === E2E_GROUP);
+  await Promise.all([
+    ...usersToDelete.map(({ id, name }) =>
       deleteApiRequest(`/api/authz/users/${id}`, `Failed to delete the e2e user "${name}"`)
-    )
-  );
-  if (e2eUsers.length) logger.info(`Deleted ${e2eUsers.length} e2e user(s)`);
-}
-
-export async function createE2eUsers(): Promise<void> {
-  const userKeys = Object.keys(E2E_USERS) as (keyof typeof E2E_USERS)[];
-  await Promise.all(
-    userKeys.map((key) =>
-      postApiRequest<PostAuthzUsersApiArg['body'], PostAuthzUsersApiResponse>(
-        '/api/authz/users',
-        {
-          name: E2E_USERS[key],
-          identities: [E2E_USER_IDENTITIES[key]],
-          roles: E2E_USER_ROLES[key],
-          groups: [],
-        },
-        undefined,
-        `Failed to create the e2e user "${E2E_USERS[key]}"`
-      )
-    )
-  );
+    ),
+    ...groupsToDelete.map(({ id, name }) =>
+      deleteApiRequest(`/api/authz/groups/${id}`, `Failed to delete the e2e group "${name}"`)
+    ),
+  ]);
+  if (usersToDelete.length) logger.info(`Deleted ${usersToDelete.length} e2e user(s)`);
+  if (groupsToDelete.length) logger.info(`Deleted ${groupsToDelete.length} e2e group(s)`);
 }
 
 /**
- * Grant an infrastructure and a list of rolling stocks to a user, in a single request.
- *
- * @param userIdentity - The identity of the user to grant the resources to.
- * @param infraId - The ID of the infrastructure to grant.
- * @param rollingStockIds - The IDs of the rolling stocks to grant.
- * @param infraGrant - The grant given on the infrastructure.
- * @param rollingStockGrant - The grant given on the rolling stocks.
+ * Create the e2e group, then the e2e test users with their roles and groups,
+ * using the editoast API.
  */
-export async function grantInfraAndRollingStocksToUser(
-  userIdentity: string,
-  infraId: number,
-  rollingStockIds: number[],
-  infraGrant: StandardGrant = 'RESTRICTED_READER',
-  rollingStockGrant: StandardGrant = 'READER'
-): Promise<void> {
-  const [user]: PostAuthzUserInfoApiResponse = await postApiRequest(
-    '/api/authz/user/info',
-    { ids: [], identities: [userIdentity] },
-    undefined,
-    `User "${userIdentity}" not found, it should have been created by the global setup`
-  );
+export async function createE2eUsers(): Promise<void> {
+  const apiContext = await getApiContext();
+  let group: PutAuthzGroupsApiResponse;
+  try {
+    const body: PutAuthzGroupsApiArg['body'] = { name: E2E_GROUP, roles: [] };
+    const response = await apiContext.put('/api/authz/groups', { data: body });
+    handleErrorResponse(response, `Failed to create the e2e group "${E2E_GROUP}"`);
+    group = (await response.json()) as PutAuthzGroupsApiResponse;
+  } finally {
+    await apiContext.dispose();
+  }
+  const groupIds: Record<string, number> = { [group.name]: group.id };
 
-  const userGrants: GrantBody[] = [
-    {
-      resource_type: 'infra',
-      resource_id: infraId,
-      subject_id: user.id,
-      grant: infraGrant,
-    },
-    ...rollingStockIds.map(
-      (rollingStockId): GrantBody => ({
-        resource_type: 'rolling_stock',
-        resource_id: rollingStockId,
-        subject_id: user.id,
-        grant: rollingStockGrant,
-      })
-    ),
-  ];
-  await postApiRequest(
-    '/api/authz/grants',
-    { grant: userGrants },
-    undefined,
-    `Failed to grant the infrastructure and the rolling stocks to "${userIdentity}"`,
-    false
+  const e2eUsers: readonly E2EUser[] = Object.values(E2E_USERS);
+  await Promise.all(
+    e2eUsers.map(({ name, identity, roles, groups = [] }) =>
+      postApiRequest<PostAuthzUsersApiArg['body'], PostAuthzUsersApiResponse>(
+        '/api/authz/users',
+        {
+          name,
+          identities: [identity],
+          roles: [...roles],
+          groups: groups.map((groupName) => groupIds[groupName]),
+        },
+        undefined,
+        `Failed to create the e2e user "${name}"`
+      )
+    )
   );
 }
 

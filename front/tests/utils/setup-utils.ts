@@ -11,7 +11,7 @@ import type {
   Study,
 } from 'common/api/osrdEditoastApi';
 
-import { E2E_USER_IDENTITIES } from '../assets/constants/permission-const';
+import { E2E_USERS } from '../assets/constants/permission-const';
 import {
   dualModeRollingStockName,
   electricRollingStockName,
@@ -30,13 +30,13 @@ import { STUDY_DATA } from '../assets/operation-studies/study-const';
 import {
   getApiRequest,
   getInfra,
-  grantInfraAndRollingStocksToUser,
   listApiRequest,
   retrieveLatestStdcmEnvironment,
   postApiRequest,
   createStdcmEnvironment,
   setTowedRollingStock,
 } from './api-utils';
+import { addGrants } from './authz-utils';
 import { createDateInSpecialTimeZone } from './date-utils';
 import { readJsonFile } from './file-utils';
 import createScenario from './scenario';
@@ -234,17 +234,14 @@ export async function createDataForTests(): Promise<void> {
       await listApiRequest<LightRollingStock>('/api/light_rolling_stock')
     ).map(({ id }) => id);
     await Promise.all([
-      grantInfraAndRollingStocksToUser(
-        E2E_USER_IDENTITIES.stdcmOnly,
-        mediumInfra.id,
-        allRollingStockIds
-      ),
-      grantInfraAndRollingStocksToUser(
-        E2E_USER_IDENTITIES.projectOutsider,
-        mediumInfra.id,
-        allRollingStockIds,
-        'READER'
-      ),
+      addGrants('infra', mediumInfra.id, [
+        { subject: E2E_USERS.stdcmOnly, grant: 'RESTRICTED_READER' },
+        { subject: E2E_USERS.projectOutsider, grant: 'READER' },
+      ]),
+      addGrants('rolling_stock', allRollingStockIds, [
+        { subject: E2E_USERS.stdcmOnly, grant: 'READER' },
+        { subject: E2E_USERS.projectOutsider, grant: 'READER' },
+      ]),
     ]);
   } catch (error) {
     throw new Error('Error during test data setup', { cause: error });
