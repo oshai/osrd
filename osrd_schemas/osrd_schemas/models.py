@@ -2067,34 +2067,6 @@ class EditoastSubCategoryErrorNotFound(BaseModel):
     )
 
 
-class EditoastTemporarySpeedLimitErrorDatabase(BaseModel):
-    context: Annotated[
-        dict[str, Any] | None,
-        Field(title="EditoastTemporarySpeedLimitErrorDatabaseContext"),
-    ] = None
-    message: StrictStr
-    status: Literal[500] = 500
-    type: Literal["editoast:temporary_speed_limit:Database"] = (
-        "editoast:temporary_speed_limit:Database"
-    )
-
-
-class EditoastTemporarySpeedLimitErrorNameAlreadyUsedContext(BaseModel):
-    name: StrictStr
-
-
-class EditoastTemporarySpeedLimitErrorNameAlreadyUsed(BaseModel):
-    context: Annotated[
-        EditoastTemporarySpeedLimitErrorNameAlreadyUsedContext | None,
-        Field(title="EditoastTemporarySpeedLimitErrorNameAlreadyUsedContext"),
-    ] = None
-    message: StrictStr
-    status: Literal[400] = 400
-    type: Literal["editoast:temporary_speed_limit:NameAlreadyUsed"] = (
-        "editoast:temporary_speed_limit:NameAlreadyUsed"
-    )
-
-
 class EditoastTimetableErrorBatchNotFoundContext(BaseModel):
     timetable_ids: dict[str, Any]
 
@@ -5069,8 +5041,6 @@ class EditoastError(
         | EditoastSubCategoryErrorCodeAlreadyUsed
         | EditoastSubCategoryErrorDatabase
         | EditoastSubCategoryErrorNotFound
-        | EditoastTemporarySpeedLimitErrorDatabase
-        | EditoastTemporarySpeedLimitErrorNameAlreadyUsed
         | EditoastTimetableErrorBatchNotFound
         | EditoastTimetableErrorDatabase
         | EditoastTimetableErrorInfraNotFound
@@ -5232,8 +5202,6 @@ class EditoastError(
         | EditoastSubCategoryErrorCodeAlreadyUsed
         | EditoastSubCategoryErrorDatabase
         | EditoastSubCategoryErrorNotFound
-        | EditoastTemporarySpeedLimitErrorDatabase
-        | EditoastTemporarySpeedLimitErrorNameAlreadyUsed
         | EditoastTimetableErrorBatchNotFound
         | EditoastTimetableErrorDatabase
         | EditoastTimetableErrorInfraNotFound
