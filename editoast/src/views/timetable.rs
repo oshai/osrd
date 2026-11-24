@@ -357,15 +357,8 @@ pub(in crate::views) async fn get_train_schedules(
         return Err(TimetableError::NotFound { timetable_id }.into());
     }
 
-    let train_schedule_set_ids =
-        Timetable::get_train_schedule_set_ids_from_timetable(timetable_id, conn).await?;
-
     let inner_timetable_ids =
-        TrainScheduleSetWithTimetable::retrieve_batch(conn, train_schedule_set_ids)
-            .await?
-            .into_iter()
-            .map(|train_schedule_set| train_schedule_set.timetable_id)
-            .collect_vec();
+        TimetableInheritance::list_inner_timetable_ids(conn, timetable_id).await?;
 
     let settings = pagination_params
         .into_selection_settings()

@@ -43,7 +43,7 @@ export type TrainScheduleSetManager = {
   getSetByCatalogAndName: (name: string, catalogId: number) => TrainScheduleSet | null;
   localCopySet: (trainScheduleSet: TrainScheduleSet) => Promise<void>;
   updateSet: (trainScheduleSet: TrainScheduleSet, data: TrainScheduleSetFormData) => Promise<void>;
-  removeSet: (id: number) => Promise<void>;
+  removeSet: (trainScheduleSet: TrainScheduleSet) => Promise<void>;
 };
 
 export default function useScenarioTrainScheduleSet(
@@ -126,7 +126,7 @@ export default function useScenarioTrainScheduleSet(
   );
 
   const removeTrainScheduleSet = useCallback(
-    async (id: TrainScheduleSet['id']): Promise<void> => {
+    async ({ id, timetable_id }: TrainScheduleSet): Promise<void> => {
       // When linking train schedule sets to a timetable, the backend expects the full list of IDs.
       // Any ID not provided is automatically unlinked, so when removing one train schedule set
       // we must explicitly send all remaining IDs to avoid unlinking the others.
@@ -140,10 +140,9 @@ export default function useScenarioTrainScheduleSet(
 
       // The train schedules are kept in a local state, so the ones of the unlinked set must be
       // dropped explicitly, otherwise they stay displayed until the page is reloaded.
-      const removedSetTimetableId = trainScheduleSets?.find((tss) => tss.id === id)?.timetable_id;
       removeTrainSchedules(
         [...trainSchedules.values()]
-          .filter((trainSchedule) => trainSchedule.timetable_id === removedSetTimetableId)
+          .filter((trainSchedule) => trainSchedule.timetable_id === timetable_id)
           .map((trainSchedule) => trainSchedule.id)
       );
     },

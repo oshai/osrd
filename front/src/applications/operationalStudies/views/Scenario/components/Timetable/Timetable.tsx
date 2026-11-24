@@ -116,7 +116,7 @@ const Timetable = ({
           ({ trainScheduleSet }) => trainScheduleSet.id === trainScheduleSetId
         )?.trainScheduleSet.timetable_id;
         if (targetTimetableId === undefined) {
-          throw new Error('Train schedule set to move the train schedules to not found');
+          throw new Error(`Destination train schedule set ${trainScheduleSetId} not found`);
         }
 
         // TODO: SHARING_EXCEPTIONS - This endpoint is not yet migrated and require a train_schedule_set_id
