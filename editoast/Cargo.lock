@@ -1523,6 +1523,7 @@ dependencies = [
  "opentelemetry_sdk",
  "ordered-float",
  "pathfinding",
+ "percent-encoding",
  "petgraph",
  "phf 0.14.0",
  "postgis_diesel",

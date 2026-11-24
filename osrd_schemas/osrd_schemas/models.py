@@ -1901,36 +1901,6 @@ class EditoastSimilarTrainsErrorSpeedLimitNotFound(BaseModel):
     )
 
 
-class EditoastSpriteErrorsFileNotFoundContext(BaseModel):
-    file: StrictStr
-
-
-class EditoastSpriteErrorsFileNotFound(BaseModel):
-    context: Annotated[
-        EditoastSpriteErrorsFileNotFoundContext | None,
-        Field(title="EditoastSpriteErrorsFileNotFoundContext"),
-    ] = None
-    message: StrictStr
-    status: Literal[404] = 404
-    type: Literal["editoast:sprites:FileNotFound"] = "editoast:sprites:FileNotFound"
-
-
-class EditoastSpriteErrorsUnknownSignalingSystemContext(BaseModel):
-    signaling_system: StrictStr
-
-
-class EditoastSpriteErrorsUnknownSignalingSystem(BaseModel):
-    context: Annotated[
-        EditoastSpriteErrorsUnknownSignalingSystemContext | None,
-        Field(title="EditoastSpriteErrorsUnknownSignalingSystemContext"),
-    ] = None
-    message: StrictStr
-    status: Literal[404] = 404
-    type: Literal["editoast:sprites:UnknownSignalingSystem"] = (
-        "editoast:sprites:UnknownSignalingSystem"
-    )
-
-
 class EditoastStdcmErrorBatchRollingStockNotFoundContext(BaseModel):
     ids: dict[str, Any]
 
@@ -5149,8 +5119,6 @@ class EditoastError(
         | EditoastSimilarTrainsErrorInvalidPath
         | EditoastSimilarTrainsErrorRollingStockNotFound
         | EditoastSimilarTrainsErrorSpeedLimitNotFound
-        | EditoastSpriteErrorsFileNotFound
-        | EditoastSpriteErrorsUnknownSignalingSystem
         | EditoastStdcmErrorBatchRollingStockNotFound
         | EditoastStdcmErrorDatabase
         | EditoastStdcmErrorInfraNotFound
@@ -5318,8 +5286,6 @@ class EditoastError(
         | EditoastSimilarTrainsErrorInvalidPath
         | EditoastSimilarTrainsErrorRollingStockNotFound
         | EditoastSimilarTrainsErrorSpeedLimitNotFound
-        | EditoastSpriteErrorsFileNotFound
-        | EditoastSpriteErrorsUnknownSignalingSystem
         | EditoastStdcmErrorBatchRollingStockNotFound
         | EditoastStdcmErrorDatabase
         | EditoastStdcmErrorInfraNotFound
