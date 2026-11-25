@@ -353,9 +353,7 @@
       "target_already_used": "Occurrence {{occurrence}} is already used as a target."
     },
     "train_schedule_set": {
-      "CatalogEntryNotFound": "Catalog entry '{{catalog_entry_id}}' could not be found",
-      "Database": "Internal error (database)",
-      "NotFound": "Train schedule set '{{train_schedule_set_id}}' could not be found"
+      "not_found": "Train schedule set '{{train_schedule_set_id}}' could not be found"
     },
     "url": {
       "InvalidUrl": "Invalid url '{{url}}'"
