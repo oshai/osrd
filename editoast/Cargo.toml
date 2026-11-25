@@ -251,7 +251,6 @@ opentelemetry-otlp.workspace = true
 opentelemetry_sdk.workspace = true
 ordered-float.workspace = true
 pathfinding = "4.14.0"
-percent-encoding = "2.3"
 petgraph = "0.8.2"
 phf.workspace = true
 postgis_diesel.workspace = true
