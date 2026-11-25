@@ -1,4 +1,4 @@
-import { useEffect, useImperativeHandle, useRef, useState } from 'react';
+import React, { useEffect, useImperativeHandle, useRef, useState } from 'react';
 
 import cx from 'classnames';
 
@@ -89,6 +89,15 @@ const DistanceCell = ({
     }
   };
 
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    if (
+      !e.relatedTarget ||
+      (e.relatedTarget !== cellRef.current && !cellRef.current?.contains(e.relatedTarget))
+    ) {
+      commit();
+    }
+  };
+
   const editAndFocus = (event?: React.MouseEvent | React.FocusEvent) => {
     event?.preventDefault();
     setIsEditing(true);
@@ -133,15 +142,7 @@ const DistanceCell = ({
             className="input"
             data-testid="distance-cell-input"
             value={draft ?? ''}
-            onBlur={(event) => {
-              if (
-                !event.relatedTarget ||
-                (event.relatedTarget !== cellRef.current &&
-                  !cellRef.current?.contains(event.relatedTarget))
-              ) {
-                commit();
-              }
-            }}
+            onBlur={handleBlur}
             onChange={(e) => setDraft(e.currentTarget.value)}
             onKeyDown={handleKeyDown}
           />
