@@ -52,7 +52,7 @@ impl OperationalPointCache {
         mut conn: DbConnection,
         infra_id: i64,
         path_items: &[L],
-    ) -> Result<OperationalPointCache> {
+    ) -> Result<OperationalPointCache, models::Error> {
         if path_items.is_empty() {
             return Ok(OperationalPointCache::default());
         }

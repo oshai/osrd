@@ -1374,31 +1374,6 @@ class EditoastPanicJoinError(BaseModel):
     type: Literal["editoast:JoinError:panic"] = "editoast:JoinError:panic"
 
 
-class EditoastPathfindingErrorDatabase(BaseModel):
-    context: Annotated[
-        dict[str, Any] | None, Field(title="EditoastPathfindingErrorDatabaseContext")
-    ] = None
-    message: StrictStr
-    status: Literal[500] = 500
-    type: Literal["editoast:pathfinding:Database"] = "editoast:pathfinding:Database"
-
-
-class EditoastPathfindingErrorInfraNotFoundContext(BaseModel):
-    infra_id: StrictInt
-
-
-class EditoastPathfindingErrorInfraNotFound(BaseModel):
-    context: Annotated[
-        EditoastPathfindingErrorInfraNotFoundContext | None,
-        Field(title="EditoastPathfindingErrorInfraNotFoundContext"),
-    ] = None
-    message: StrictStr
-    status: Literal[404] = 404
-    type: Literal["editoast:pathfinding:InfraNotFound"] = (
-        "editoast:pathfinding:InfraNotFound"
-    )
-
-
 class EditoastPathfindingViewErrorsEndingTrackLocationNotFound(BaseModel):
     context: Annotated[
         dict[str, Any] | None,
@@ -5018,8 +4993,6 @@ class EditoastError(
         | EditoastOperationalPointProjectionErrorInvalidNumberOfDistances
         | EditoastOperationalPointProjectionErrorInvalidNumberOfRefs
         | EditoastPanicJoinError
-        | EditoastPathfindingErrorDatabase
-        | EditoastPathfindingErrorInfraNotFound
         | EditoastPathfindingViewErrorsEndingTrackLocationNotFound
         | EditoastPathfindingViewErrorsInvalidNumberOfPaths
         | EditoastPathfindingViewErrorsStartingTrackLocationNotFound
@@ -5181,8 +5154,6 @@ class EditoastError(
         | EditoastOperationalPointProjectionErrorInvalidNumberOfDistances
         | EditoastOperationalPointProjectionErrorInvalidNumberOfRefs
         | EditoastPanicJoinError
-        | EditoastPathfindingErrorDatabase
-        | EditoastPathfindingErrorInfraNotFound
         | EditoastPathfindingViewErrorsEndingTrackLocationNotFound
         | EditoastPathfindingViewErrorsInvalidNumberOfPaths
         | EditoastPathfindingViewErrorsStartingTrackLocationNotFound
