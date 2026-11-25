@@ -20,12 +20,14 @@ use crate::views::files::FileNotFoundError;
         FileNotFoundError,
     ),
 )]
+#[tracing::instrument(skip_all, fields(file_path = %file_path, path))]
 pub(in crate::views) async fn get(
     Path(file_path): Path<String>,
     State(AppState { config, .. }): State<AppState>,
     request: Request,
 ) -> Result<impl IntoResponse, FileNotFoundError> {
     let path = config.dynamic_assets_path.join(&file_path);
+    tracing::Span::current().record("path", tracing::field::display(path.display()));
     if !path.is_file() {
         return Err(FileNotFoundError { file: file_path });
     }
