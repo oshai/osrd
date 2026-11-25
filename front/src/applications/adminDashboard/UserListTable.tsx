@@ -146,6 +146,7 @@ export function UserListTable() {
           <UserEditForm
             initialState={initialFormState!}
             onSubmit={saveUser}
+            onDelete={() => {}}
             isLoading={isCreating || isUpdating}
             onCancel={() => setIsFormOpen(false)}
           />
