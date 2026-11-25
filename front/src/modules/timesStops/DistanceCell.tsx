@@ -41,6 +41,7 @@ const DistanceCell = ({
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const cellRef = useRef<HTMLDivElement>(null);
+  const distanceValueRef = useRef(distanceValue);
 
   const normalizeInput = (input: string | undefined): string => {
     const trimmed = (input ?? '').trim();
@@ -98,21 +99,20 @@ const DistanceCell = ({
     }
   };
 
+  const startEditing = () => {
+    setDraft(formatValue(distanceValueRef.current));
+    setIsEditing(true);
+  };
+
   const editAndFocus = (event?: React.MouseEvent | React.FocusEvent) => {
     event?.preventDefault();
-    setIsEditing(true);
+    if (!isEditing) startEditing();
     inputRef.current?.focus();
   };
 
-  useImperativeHandle(
-    ref,
-    () => ({
-      focus: () => {
-        editAndFocus();
-      },
-    }),
-    []
-  );
+  useImperativeHandle(ref, () => ({
+    focus: () => editAndFocus(),
+  }));
 
   useEffect(() => {
     if (isEditing) {
