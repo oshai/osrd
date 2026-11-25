@@ -10,6 +10,9 @@ import { osrdGatewayApi } from 'common/api/osrdGatewayApi';
 
 import './styles/user-edit-form.css';
 
+const PROVIDER_LABEL_ID = 'admin-dashboard-identity-label-provider';
+const IDENTIFIER_LABEL_ID = 'admin-dashboard-identity-label-identifier';
+
 type GroupId = number;
 
 export type UserEditFormState = {
@@ -115,6 +118,7 @@ function IdentityInput({
     <>
       <Select
         id={`admin-dashboard-provider-${identityKey}`}
+        aria-labelledby={PROVIDER_LABEL_ID}
         value={provider && providerList.includes(provider) ? provider : undefined}
         options={providerList}
         placeholder={t('chooseProvider')}
@@ -127,13 +131,19 @@ function IdentityInput({
       />
       <Input
         id={`admin-dashboard-identity-${identityKey}`}
+        aria-labelledby={IDENTIFIER_LABEL_ID}
         narrow={true}
         value={identifier}
         onChange={(e) => onChange({ provider, identifier: e.target.value })}
         statusWithMessage={conflict ? { status: 'error' } : undefined}
       />
       {deletable && (
-        <button type="button" className="delete-identity-button" onClick={onDelete}>
+        <button
+          type="button"
+          className="delete-identity-button"
+          aria-label={t('deleteIdentity')}
+          onClick={onDelete}
+        >
           <NoEntry size="sm" />
         </button>
       )}
@@ -146,12 +156,13 @@ function detectInvalidInput(identities: UserEditFormState['identities']) {
   const conflicts = new Set<string>();
   let incomplete = identities.length === 0;
   for (const { key, provider, identifier } of identities) {
-    if (!provider || !identifier.trim()) {
+    const ident = identifier.trim();
+    if (!provider || !ident) {
       incomplete = true;
       continue;
     }
 
-    const pair = `${provider}/${identifier}`;
+    const pair = `${provider}/${ident}`;
     const firstKey = firstKeyByPair.get(pair);
     if (firstKey === undefined) {
       firstKeyByPair.set(pair, key);
@@ -173,8 +184,12 @@ function InfoInput({ name, identities, providerList, conflicts, onChange }: Info
     <div className="user-info-input">
       <div className="identity-input">
         <div className="identity-input-table">
-          <span className="identity-label-provider">{t('provider')}</span>
-          <span className="identity-label-identifier">{t('identifier')}</span>
+          <span id={PROVIDER_LABEL_ID} className="identity-label-provider">
+            {t('provider')}
+          </span>
+          <span id={IDENTIFIER_LABEL_ID} className="identity-label-identifier">
+            {t('identifier')}
+          </span>
           {identities.map(({ key, provider, identifier }) => (
             <IdentityInput
               key={key}
@@ -247,7 +262,7 @@ export default function UserEditForm({
   const providerValues = gatewayProviders?.map(({ provider_id }) => provider_id) ?? [];
   const { conflicts, incomplete } = detectInvalidInput(state.identities);
   const hasConflicts = conflicts.size > 0;
-  const emptyName = !state.name.trim();
+  const trimmedName = state.name.trim();
 
   return (
     <tr className="user-edit-form-row">
@@ -276,9 +291,18 @@ export default function UserEditForm({
             <Button
               label={t('addUser')}
               type="button"
-              isDisabled={incomplete || hasConflicts || emptyName}
+              isDisabled={incomplete || hasConflicts || !trimmedName}
               isLoading={isLoading}
-              onClick={() => onSubmit(state)}
+              onClick={() =>
+                onSubmit({
+                  ...state,
+                  name: trimmedName,
+                  identities: state.identities.map((identity) => ({
+                    ...identity,
+                    identifier: identity.identifier.trim(),
+                  })),
+                })
+              }
             />
           </div>
         </form>

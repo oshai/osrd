@@ -11,6 +11,7 @@
     "addUser": "Ajouter un utilisateur",
     "cancel": "Annuler",
     "chooseProvider": "Choisir",
+    "deleteIdentity": "Supprimer l’identité",
     "groups": "Groupes",
     "identifier": "Identifiant",
     "name": "Nom",
