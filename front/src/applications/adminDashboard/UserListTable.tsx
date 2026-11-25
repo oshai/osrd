@@ -80,22 +80,29 @@ export function UserListTable() {
 
   const { t } = useTranslation('admin-dashboard');
   const dispatch = useAppDispatch();
-  const [createUser, { isLoading }] = osrdEditoastApi.endpoints.postAuthzUsers.useMutation();
+  const [createUser, { isLoading: isCreating }] =
+    osrdEditoastApi.endpoints.postAuthzUsers.useMutation();
+  const [updateUser, { isLoading: isUpdating }] =
+    osrdEditoastApi.endpoints.patchAuthzUsersByUserId.useMutation();
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingUserId, setEditingUserId] = useState<number | null>(null);
   const [initialFormState, setInitialFormState] = useState<UserEditFormState | null>(null);
   const { data: users } = osrdEditoastApi.endpoints.getAuthzUsers.useQuery();
   const sortedUsers = users?.toSorted((a, b) => b.id - a.id);
 
   const saveUser = async ({ name, groups, roles, identities }: UserEditFormState) => {
+    const body = {
+      name,
+      groups,
+      roles,
+      identities: identities.map(({ provider, identifier }) => `${provider}/${identifier}`),
+    };
     try {
-      await createUser({
-        body: {
-          name,
-          groups,
-          roles,
-          identities: identities.map(({ provider, identifier }) => `${provider}/${identifier}`),
-        },
-      }).unwrap();
+      if (editingUserId !== null) {
+        await updateUser({ userId: editingUserId, body }).unwrap();
+      } else {
+        await createUser({ body }).unwrap();
+      }
       setIsFormOpen(false);
     } catch (error) {
       dispatch(setFailure(castErrorToFailure(error)));
@@ -113,6 +120,7 @@ export function UserListTable() {
               size="small"
               variant="Quiet"
               onClick={() => {
+                setEditingUserId(null);
                 setIsFormOpen(true);
                 setInitialFormState({
                   mode: UserEditFormMode.Add,
@@ -138,7 +146,7 @@ export function UserListTable() {
           <UserEditForm
             initialState={initialFormState!}
             onSubmit={saveUser}
-            isLoading={isLoading}
+            isLoading={isCreating || isUpdating}
             onCancel={() => setIsFormOpen(false)}
           />
         )}
@@ -148,6 +156,7 @@ export function UserListTable() {
             {...user}
             clickable={!isFormOpen}
             onClick={() => {
+              setEditingUserId(user.id);
               setIsFormOpen(true);
               setInitialFormState({
                 mode: UserEditFormMode.Edit,
@@ -155,7 +164,8 @@ export function UserListTable() {
                 identities: user.identities.map((identity) => ({
                   key: uuidv4(),
                   provider: identity.split('/', 2)[0],
-                  identifier: identity.split('/', 2)[1],
+                  // NOTE: identifiers theoretically can contain slashes
+                  identifier: identity.split('/').slice(1).join('/'),
                 })),
                 roles: user.effective_roles,
                 groups: user.groups.map(({ id }) => id),
