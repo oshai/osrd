@@ -44,61 +44,48 @@ pub(in crate::views) async fn get(
 
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
+
     use crate::views::test_app;
 
+    #[rstest]
+    #[case::icons_works(
+        "/assets/icons/TVM300/REP%20TGV.svg",
+        "image/svg+xml",
+        "icons/TVM300/REP TGV.svg"
+    )]
+    #[case::sprites_works(
+        "/assets/sprites/TVM300/REP%20TGV.svg",
+        "image/svg+xml",
+        "sprites/TVM300/REP TGV.svg"
+    )]
+    #[case::font_works(
+        "/assets/fonts/glyphs/IBMPlexSans/0-255.pbf",
+        "application/octet-stream",
+        "fonts/glyphs/IBMPlexSans/0-255.pbf"
+    )]
     #[tokio::test(flavor = "multi_thread", worker_threads = 1)]
-    async fn assets_works() {
+    async fn assets_works(
+        #[case] request_uri: &str,
+        #[case] content_type: &str,
+        #[case] expected_path: &str,
+    ) {
         let app = test_app!().skip_authz().build();
-        let response = app.get("/assets/icons/TVM300/REP%20TGV.svg").await;
+        let response = app.get(request_uri).await;
         response.assert_status_ok();
-        assert_eq!("image/svg+xml", response.content_type());
+        assert_eq!(content_type, response.content_type());
         let response = response.into_bytes();
-        let expected = std::fs::read(
-            app.config()
-                .dynamic_assets_path
-                .join("icons/TVM300/REP TGV.svg"),
-        )
-        .unwrap();
-        assert_eq!(response, expected);
-
-        let response = app.get("/assets/sprites/TVM300/REP%20TGV.svg").await;
-        response.assert_status_ok();
-        assert_eq!("image/svg+xml", response.content_type());
-        let response = response.into_bytes();
-        let expected = std::fs::read(
-            app.config()
-                .dynamic_assets_path
-                .join("sprites/TVM300/REP TGV.svg"),
-        )
-        .unwrap();
-        assert_eq!(response, expected);
-
-        let response = app.get("/assets/fonts/glyphs/IBMPlexSans/0-255.pbf").await;
-        response.assert_status_ok();
-        assert_eq!("application/octet-stream", response.content_type());
-        let response = response.into_bytes();
-        let expected = std::fs::read(
-            app.config()
-                .dynamic_assets_path
-                .join("fonts/glyphs/IBMPlexSans/0-255.pbf"),
-        )
-        .unwrap();
+        let expected = std::fs::read(app.config().dynamic_assets_path.join(expected_path)).unwrap();
         assert_eq!(response, expected);
     }
 
+    #[rstest]
+    #[case::icons_not_found("/assets/icons/TVM300/NOT_A_THING.svg")]
+    #[case::sprites_not_found("/assets/sprites/TVM300/NOT_A_THING.svg")]
+    #[case::fonts_not_found("/assets/fonts/glyphs/Comic%20Sans/0-255.pbf")]
     #[tokio::test(flavor = "multi_thread", worker_threads = 1)]
-    async fn assets_not_found() {
+    async fn assets_not_found(#[case] path: &str) {
         let app = test_app!().skip_authz().build();
-        app.get("/assets/icons/TVM300/NOT_A_THING.svg")
-            .await
-            .assert_status_not_found();
-
-        app.get("/assets/sprites/TVM300/NOT_A_THING.svg")
-            .await
-            .assert_status_not_found();
-
-        app.get("/assets/fonts/glyphs/Comic%20Sans/0-255.pbf")
-            .await
-            .assert_status_not_found();
+        app.get(path).await.assert_status_not_found();
     }
 }
