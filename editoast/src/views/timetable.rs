@@ -1660,6 +1660,11 @@ mod tests {
         vec![train_schedule(0, Some((30, 60)))],
         StatusCode::UNPROCESSABLE_ENTITY,
         "editoast:timetable:InvalidPaceInHourlyTimetable")]
+    #[case::negative_start_time(
+        TestTimetable::Timetable(TimetableType::Hourly),
+        vec![train_schedule(-60, Some((120, 30)))],
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "editoast:timetable:InvalidPaceInHourlyTimetable")]
     #[tokio::test(flavor = "multi_thread", worker_threads = 1)]
     async fn create_train_schedules_fails(
         #[case] timetable: TestTimetable,
@@ -1685,7 +1690,7 @@ mod tests {
     #[rstest]
     #[case::calendar(
         TimetableType::Calendar,
-        vec![train_schedule(0, None), train_schedule(0, Some((120, 15)))])]
+        vec![train_schedule(0, None), train_schedule(-60, Some((120, 15)))])]
     #[case::hourly(
         TimetableType::Hourly,
         vec![train_schedule(5, Some((120, 30))), train_schedule(5, Some((120, 15)))])]
