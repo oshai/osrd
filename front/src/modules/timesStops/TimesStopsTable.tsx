@@ -913,6 +913,7 @@ const TimesStopsTable = ({
           cell: returnPositionCell,
           meta: {
             className: cx('col-reference-position col-with-distance', { computed: pathFound }),
+            tabbable: true,
             title: t(pathFound ? 'calculatedPosition' : 'requestedPosition'),
             'data-testid': 'reference-position',
           },
