@@ -21,7 +21,15 @@ import './styles/user-list-table.css';
 
 const ROLE_ORDER: Record<Role, number> = { Admin: 0, Stdcm: 1, OperationalStudies: 2 };
 
-function DeleteUserDialog({ onClose, onDelete }: { onClose: () => void; onDelete: () => void }) {
+function DeleteUserDialog({
+  onClose,
+  onDelete,
+  isDeleting,
+}: {
+  onClose: () => void;
+  onDelete: () => void;
+  isDeleting: boolean;
+}) {
   const { t } = useTranslation('admin-dashboard');
   const title = t('deleteConfirmation.title');
   const buttonsRef = useRef<HTMLDivElement>(null);
@@ -33,8 +41,18 @@ function DeleteUserDialog({ onClose, onDelete }: { onClose: () => void; onDelete
       header={<h5>{title}</h5>}
       footer={
         <div className="buttons" ref={buttonsRef}>
-          <Button variant="Cancel" label={t('userForm.cancel')} onClick={onClose} />
-          <Button variant="Destructive" label={t('userForm.deleteUser')} onClick={onDelete} />
+          <Button
+            variant="Cancel"
+            label={t('userForm.cancel')}
+            onClick={onClose}
+            isDisabled={isDeleting}
+          />
+          <Button
+            variant="Destructive"
+            label={t('userForm.deleteUser')}
+            onClick={onDelete}
+            isLoading={isDeleting}
+          />
         </div>
       }
     >
@@ -107,12 +125,25 @@ export function UserListTable() {
     osrdEditoastApi.endpoints.postAuthzUsers.useMutation();
   const [updateUser, { isLoading: isUpdating }] =
     osrdEditoastApi.endpoints.patchAuthzUsersByUserId.useMutation();
+  const [deleteUser, { isLoading: isDeleting }] =
+    osrdEditoastApi.endpoints.deleteAuthzUsersByUserId.useMutation();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [editingUserId, setEditingUserId] = useState<number | null>(null);
   const [initialFormState, setInitialFormState] = useState<UserEditFormState | null>(null);
   const { data: users } = osrdEditoastApi.endpoints.getAuthzUsers.useQuery();
   const sortedUsers = users?.toSorted((a, b) => b.id - a.id);
+
+  const handleDeleteUser = async () => {
+    if (editingUserId === null) return;
+    try {
+      await deleteUser({ userId: editingUserId }).unwrap();
+      setIsDeleteDialogOpen(false);
+      setIsFormOpen(false);
+    } catch (error) {
+      dispatch(setFailure(castErrorToFailure(error)));
+    }
+  };
 
   const saveUser = async ({ name, groups, roles, identities }: UserEditFormState) => {
     const body = {
@@ -202,7 +233,13 @@ export function UserListTable() {
         </tbody>
       </table>
       {isDeleteDialogOpen && (
-        <DeleteUserDialog onClose={() => setIsDeleteDialogOpen(false)} onDelete={() => {}} />
+        <DeleteUserDialog
+          onClose={() => {
+            if (!isDeleting) setIsDeleteDialogOpen(false);
+          }}
+          onDelete={handleDeleteUser}
+          isDeleting={isDeleting}
+        />
       )}
     </>
   );
